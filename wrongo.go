@@ -25,10 +25,33 @@ func New(msg string) *err {
 	return &err{msg: msg}
 }
 
+func From(e error) *err {
+	if asErr, ok := e.(*err); ok {
+		return asErr
+	}
+	return New(e.Error())
+}
+
 func (e *err) Add(msg string) *err {
 	n := err{msg: msg}
 	n.child = e
 	return &n
+}
+
+func Or(err1, err2 error) *err {
+	if err1 != nil {
+		return From(err1)
+	} else if err2 != nil {
+		return From(err2)
+	}
+	return nil
+}
+
+func (e *err) Or(err *err) *err {
+	if e == nil {
+		return err
+	}
+	return e
 }
 
 func (e *err) SetFormatter(f formatFunc) {
