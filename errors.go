@@ -1,4 +1,6 @@
-package wrongo
+package errors
+
+import "fmt"
 
 type formatFunc func(e *err) string
 
@@ -25,6 +27,10 @@ func New(msg string) *err {
 	return &err{msg: msg}
 }
 
+func NewF(format string, a ...interface{}) *err {
+	return New(fmt.Sprintf(format, a...))
+}
+
 func From(e error) *err {
 	if asErr, ok := e.(*err); ok {
 		return asErr
@@ -32,10 +38,18 @@ func From(e error) *err {
 	return New(e.Error())
 }
 
+func FromTuple(o interface{}, e error) (interface{}, *err) {
+	return o, From(e)
+}
+
 func (e *err) Add(msg string) *err {
 	n := err{msg: msg}
 	n.child = e
 	return &n
+}
+
+func (e *err) AddF(format string, a ...interface{}) *err {
+	return e.Add(fmt.Sprintf(format, a...))
 }
 
 func Or(err1, err2 error) *err {
@@ -63,4 +77,30 @@ func (e *err) Error() string {
 		return e.format(e)
 	}
 	return defaultFormatFunc(e)
+}
+
+func (e *err) Symptom() string {
+	return e.msg
+}
+
+func Symptom(e error) string {
+	if asErr, ok := e.(*err); ok {
+		return asErr.Symptom()
+	}
+	return e.Error()
+}
+
+func (e *err) Cause() string {
+	last := e
+	for last.child != nil {
+		last = last.child
+	}
+	return last.msg
+}
+
+func Cause(e error) string {
+	if asErr, ok := e.(*err); ok {
+		return asErr.Cause()
+	}
+	return e.Error()
 }
